@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+[ -z "${UBUNTU_RELEASE}" ] && {
+  UBUNTU_RELEASE="$(lsb_release -sa 2>/dev/null | tail -n1)"
+}
+
+[ -z "${1}" ] && {
+  echo "You need to pass a package name!" > /dev/stderr
+  exit 1
+}
+
+searched_package=$(echo ${1} | sed 's|+|%2B|g')
+
+package_name=$(wget -q -O - "https://packages.ubuntu.com/search?suite=${UBUNTU_RELEASE}&arch=any&mode=exactfilename&searchon=contents&keywords=${searched_package}.pc" | \
+grep -A4 -m1 ">${1}.pc</span" | tail -n1 | tr '>' '<' | cut -d'<' -f3)
+
+[ -z "${package_name}" ] && {
+  echo "The pkgconfig package '${1}' is not present on official repositories of release '${UBUNTU_RELEASE}'" > /dev/stderr
+  exit 1
+}
+
+echo "${package_name}"
+
